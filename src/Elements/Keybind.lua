@@ -171,8 +171,8 @@ function Element:New(Idx, Config)
 						KeybindDisplayLabel.Text = Key
 						Keybind.Value = Key
 
-						Library:SafeCallback(Keybind.ChangedCallback, Input.KeyCode or Input.UserInputType)
-						Library:SafeCallback(Keybind.Changed, Input.KeyCode or Input.UserInputType)
+						Library:SafeCallback(Keybind.ChangedCallback, Key)
+						Library:SafeCallback(Keybind.Changed, Key)
 
 						Event:Disconnect()
 						EndedEvent:Disconnect()

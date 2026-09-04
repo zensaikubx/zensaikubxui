@@ -31,6 +31,11 @@ function Element:New(Idx, Config)
 		self.Library:SafeCallback(ActualConfig.Callback)
 	end)
 
+	-- Register in Library.Options when Idx is a named key (matches all other elements)
+	if type(Idx) ~= "table" then
+		self.Library.Options[Idx] = ButtonFrame
+	end
+
 	return ButtonFrame
 end
 

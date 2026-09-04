@@ -45,7 +45,7 @@ function TabModule:New(Title, Icon, Parent)
 		Icon = Library:GetIcon(Icon)
 	end
 
-	if Icon == "" or nil then
+	if Icon == "" or Icon == nil then
 		Icon = nil
 	end
 
