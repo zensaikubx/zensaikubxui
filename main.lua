@@ -1885,7 +1885,7 @@ return function(Config)
 	}
 
 	local Dragging, DragInput, MousePos, StartPos = false
-	local Resizing, ResizePos = false
+	local Resizing, ResizePos, ResizeStartSize = false
 	local MinimizeNotif = false
 
 	Window.AcrylicPaint = Acrylic.AcrylicPaint()
@@ -2094,6 +2094,10 @@ return function(Config)
 		then
 			Resizing = true
 			ResizePos = Input.Position
+			-- Record the window size at the moment resizing starts so that
+			-- delta is always computed from a fixed anchor, preventing the
+			-- size-accumulation glitch that occurs during diagonal drags.
+			ResizeStartSize = Vector2.new(Window.Size.X.Offset, Window.Size.Y.Offset)
 		end
 	end)
 
@@ -2125,10 +2129,16 @@ return function(Config)
 				or Input.UserInputType == Enum.UserInputType.Touch
 			)
 		then
+			-- Compute total delta from the fixed anchor (ResizePos) set at
+			-- InputBegan, then add it to the frozen ResizeStartSize.
+			-- This ensures diagonal drags never accumulate rounding errors
+			-- or double-apply the delta across frames.
 			local Delta = Input.Position - ResizePos
-			local StartSize = Window.Size
 
-			local TargetSize = Vector3.new(StartSize.X.Offset, StartSize.Y.Offset, 0) + Vector3.new(1, 1, 0) * Delta
+			local TargetSize = Vector2.new(
+				ResizeStartSize.X + Delta.X,
+				ResizeStartSize.Y + Delta.Y
+			)
 			local TargetSizeClamped =
 				Vector2.new(math.clamp(TargetSize.X, 470, 2048), math.clamp(TargetSize.Y, 380, 2048))
 
