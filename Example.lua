@@ -3,14 +3,57 @@
     Ultra-Smooth & Enhanced Roblox Interface Suite
 --]]
 
-local Zensai = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/InterfaceManager.lua"))()
+local function safeLoad(url, fallbackUrl)
+    local get = function(u)
+        local c = nil
+        pcall(function() if game and game.HttpGet then c = game:HttpGet(u) end end)
+        if c and c ~= "" then return c end
+        pcall(function() if typeof(HttpGet) == "function" then c = HttpGet(u) end end)
+        if c and c ~= "" then return c end
+        local r = (typeof(request) == "function" and request)
+            or (typeof(http_request) == "function" and http_request)
+            or (typeof(syn) == "table" and typeof(syn.request) == "function" and syn.request)
+        if r then
+            pcall(function()
+                local res = r({ Url = u, Method = "GET" })
+                if typeof(res) == "table" and res.Body and res.Body ~= "" then c = res.Body end
+            end)
+        end
+        return c
+    end
 
--- For local development / offline:
--- local Zensai = loadstring(readfile("main.lua"))()
--- local SaveManager = loadstring(readfile("SaveManager.lua"))()
--- local InterfaceManager = loadstring(readfile("InterfaceManager.lua"))()
+    local code = get(url)
+    if (not code or code == "") and fallbackUrl then
+        code = get(fallbackUrl)
+    end
+    if not code or code == "" then
+        error("[Zensai UI] ไม่สามารถดาวน์โหลดสคริปต์ได้ ตรวจสอบอินเทอร์เน็ตหรือ URL: " .. tostring(url), 2)
+    end
+
+    local loader = loadstring or (typeof(load) == "function" and load)
+    if not loader then
+        error("[Zensai UI] Executor ของคุณไม่มีฟังก์ชัน loadstring!", 2)
+    end
+
+    local fn, err = loader(code)
+    if not fn then
+        error("[Zensai UI] เกิดข้อผิดพลาดในการโหลดสคริปต์: " .. tostring(err), 2)
+    end
+    return fn()
+end
+
+local Zensai = safeLoad(
+    "https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/main.lua",
+    "https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/main.lua"
+)
+local SaveManager = safeLoad(
+    "https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua",
+    "https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/SaveManager.lua"
+)
+local InterfaceManager = safeLoad(
+    "https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/InterfaceManager.lua",
+    "https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/InterfaceManager.lua"
+)
 
 local Window = Zensai:CreateWindow({
     Title = "Zensai UI " .. Zensai.Version,

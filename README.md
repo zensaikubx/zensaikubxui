@@ -6,8 +6,14 @@
 
 ## 🚀 Quick Start (ลิ้งก์พร้อมใช้งาน)
 
-วางสคริปต์นี้ใน Executor (Delta, Hydrogen, Wave, Synapse, Solara, etc.) เพื่อเรียกใช้งานได้ทันที:
+### ตัวเลือกที่ 1: ลิ้งก์ CDN สากล (แนะนำที่สุด - เร็วและไม่โดนเน็ตไทยบล็อก)
+```lua
+local Zensai = loadstring(game:HttpGet("https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/InterfaceManager.lua"))()
+```
 
+### ตัวเลือกที่ 2: ลิ้งก์ GitHub Raw โดยตรง
 ```lua
 local Zensai = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua"))()
