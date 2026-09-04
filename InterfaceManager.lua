@@ -1,6 +1,44 @@
 local httpService = game:GetService("HttpService")
 
 local InterfaceManager = {} do
+	local function safeIsFile(path)
+		if typeof(isfile) == "function" then
+			local s, res = pcall(isfile, path)
+			return s and res
+		end
+		return false
+	end
+
+	local function safeReadFile(path)
+		if typeof(readfile) == "function" then
+			local s, res = pcall(readfile, path)
+			if s and type(res) == "string" then
+				return res
+			end
+		end
+		return nil
+	end
+
+	local function safeWriteFile(path, content)
+		if typeof(writefile) == "function" then
+			pcall(writefile, path, content)
+		end
+	end
+
+	local function safeIsFolder(path)
+		if typeof(isfolder) == "function" then
+			local s, res = pcall(isfolder, path)
+			return s and res
+		end
+		return false
+	end
+
+	local function safeMakeFolder(path)
+		if typeof(makefolder) == "function" then
+			pcall(makefolder, path)
+		end
+	end
+
 	InterfaceManager.Folder = "ZensaiSettings"
     InterfaceManager.Settings = {
         Theme = "Dark",
@@ -31,26 +69,25 @@ local InterfaceManager = {} do
 
 		for i = 1, #paths do
 			local str = paths[i]
-			if makefolder and isfolder and not isfolder(str) then
-				pcall(makefolder, str)
+			if not safeIsFolder(str) then
+				safeMakeFolder(str)
 			end
 		end
 	end
 
     function InterfaceManager:SaveSettings()
-        if writefile then
-            pcall(writefile, self.Folder .. "/options.json", httpService:JSONEncode(InterfaceManager.Settings))
-        end
+		safeWriteFile(self.Folder .. "/options.json", httpService:JSONEncode(InterfaceManager.Settings))
     end
 
     function InterfaceManager:LoadSettings()
         local path = self.Folder .. "/options.json"
-        if not (isfile and isfile(path)) and (isfile and isfile("FluentSettings/options.json")) then
+        if not safeIsFile(path) and safeIsFile("FluentSettings/options.json") then
             path = "FluentSettings/options.json"
         end
 
-        if isfile and isfile(path) then
-            local data = readfile(path)
+        if safeIsFile(path) then
+            local data = safeReadFile(path)
+			if not data then return end
             local success, decoded = pcall(httpService.JSONDecode, httpService, data)
 
             if success and type(decoded) == "table" then

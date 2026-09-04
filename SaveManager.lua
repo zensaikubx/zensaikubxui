@@ -1,6 +1,59 @@
 local httpService = game:GetService("HttpService")
 
 local SaveManager = {} do
+	local function safeIsFile(path)
+		if typeof(isfile) == "function" then
+			local s, res = pcall(isfile, path)
+			return s and res
+		end
+		return false
+	end
+
+	local function safeReadFile(path)
+		if typeof(readfile) == "function" then
+			local s, res = pcall(readfile, path)
+			if s and type(res) == "string" then
+				return res
+			end
+		end
+		return nil
+	end
+
+	local function safeWriteFile(path, content)
+		if typeof(writefile) == "function" then
+			local s, err = pcall(writefile, path, content)
+			if s then
+				return true
+			end
+			return false, tostring(err)
+		end
+		return false, "filesystem not supported on this executor"
+	end
+
+	local function safeIsFolder(path)
+		if typeof(isfolder) == "function" then
+			local s, res = pcall(isfolder, path)
+			return s and res
+		end
+		return false
+	end
+
+	local function safeMakeFolder(path)
+		if typeof(makefolder) == "function" then
+			pcall(makefolder, path)
+		end
+	end
+
+	local function safeListFiles(path)
+		if typeof(listfiles) == "function" then
+			local s, res = pcall(listfiles, path)
+			if s and type(res) == "table" then
+				return res
+			end
+		end
+		return {}
+	end
+
 	SaveManager.Folder = "ZensaiSettings"
 	SaveManager.Ignore = {}
 	SaveManager.Parser = {
@@ -104,7 +157,10 @@ local SaveManager = {} do
 			return false, "failed to encode data"
 		end
 
-		writefile(fullPath, encoded)
+		local successWrite, writeErr = safeWriteFile(fullPath, encoded)
+		if not successWrite then
+			return false, writeErr
+		end
 		return true
 	end
 
@@ -114,12 +170,15 @@ local SaveManager = {} do
 		end
 		
 		local file = self.Folder .. "/settings/" .. name .. ".json"
-		if not (isfile and isfile(file)) and (isfile and isfile("FluentSettings/settings/" .. name .. ".json")) then
+		if not safeIsFile(file) and safeIsFile("FluentSettings/settings/" .. name .. ".json") then
 			file = "FluentSettings/settings/" .. name .. ".json"
 		end
-		if not (isfile and isfile(file)) then return false, "invalid file" end
+		if not safeIsFile(file) then return false, "invalid file" end
 
-		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
+		local content = safeReadFile(file)
+		if not content then return false, "failed to read file" end
+
+		local success, decoded = pcall(httpService.JSONDecode, httpService, content)
 		if not success then return false, "decode error" end
 
 		for _, option in next, decoded.objects do
@@ -145,14 +204,14 @@ local SaveManager = {} do
 
 		for i = 1, #paths do
 			local str = paths[i]
-			if makefolder and isfolder and not isfolder(str) then
-				pcall(makefolder, str)
+			if not safeIsFolder(str) then
+				safeMakeFolder(str)
 			end
 		end
 	end
 
 	function SaveManager:RefreshConfigList()
-		local list = listfiles and listfiles(self.Folder .. "/settings") or {}
+		local list = safeListFiles(self.Folder .. "/settings")
 
 		local out = {}
 		for i = 1, #list do
@@ -184,12 +243,13 @@ local SaveManager = {} do
 
 	function SaveManager:LoadAutoloadConfig()
 		local autoPath = self.Folder .. "/settings/autoload.txt"
-		if not (isfile and isfile(autoPath)) and (isfile and isfile("FluentSettings/settings/autoload.txt")) then
+		if not safeIsFile(autoPath) and safeIsFile("FluentSettings/settings/autoload.txt") then
 			autoPath = "FluentSettings/settings/autoload.txt"
 		end
 
-		if isfile and isfile(autoPath) then
-			local name = readfile(autoPath)
+		if safeIsFile(autoPath) then
+			local name = safeReadFile(autoPath)
+			if not name then return end
 
 			local success, err = self:Load(name)
 			if not success then
@@ -304,7 +364,15 @@ local SaveManager = {} do
 		local AutoloadButton
 		AutoloadButton = section:AddButton({Title = "Set as autoload", Description = "Current autoload config: none", Callback = function()
 			local name = SaveManager.Options.SaveManager_ConfigList.Value
-			writefile(self.Folder .. "/settings/autoload.txt", name)
+			local successWrite, writeErr = safeWriteFile(self.Folder .. "/settings/autoload.txt", name)
+			if not successWrite then
+				return self.Library:Notify({
+					Title = "Interface",
+					Content = "Config loader",
+					SubContent = "Failed to set autoload: " .. tostring(writeErr),
+					Duration = 7
+				})
+			end
 			AutoloadButton:SetDesc("Current autoload config: " .. name)
 			self.Library:Notify({
 				Title = "Interface",
@@ -314,9 +382,11 @@ local SaveManager = {} do
 			})
 		end})
 
-		if isfile(self.Folder .. "/settings/autoload.txt") then
-			local name = readfile(self.Folder .. "/settings/autoload.txt")
-			AutoloadButton:SetDesc("Current autoload config: " .. name)
+		if safeIsFile(self.Folder .. "/settings/autoload.txt") then
+			local name = safeReadFile(self.Folder .. "/settings/autoload.txt")
+			if name then
+				AutoloadButton:SetDesc("Current autoload config: " .. name)
+			end
 		end
 
 		SaveManager:SetIgnoreIndexes({ "SaveManager_ConfigList", "SaveManager_ConfigName" })

@@ -10,13 +10,20 @@ local a,b={{1,'ModuleScript',{'MainModule'},{{18,'ModuleScript',{'Creator'}},{28
 local aa = {
 [1] = function(...)
 local maui, script, require, getfenv, setfenv = b(1)
-local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
-local LocalPlayer = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local Camera = game:GetService("Workspace").CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer and not RunService:IsStudio() then
+	local start = os.clock()
+	while not LocalPlayer and (os.clock() - start) < 5 do
+		LocalPlayer = Players.LocalPlayer
+		task.wait(0.05)
+	end
+end
 
 local Root = script
 local Creator = require(Root.Creator)
@@ -27,11 +34,69 @@ local NotificationModule = require(Components.Notification)
 
 local New = Creator.New
 
-local ProtectGui = protectgui or (syn and syn.protect_gui) or function() end
+local function GetGuiParent()
+	-- 1. UNC gethui function (hidden UI container)
+	if typeof(gethui) == "function" then
+		local success, hui = pcall(gethui)
+		if success and hui then
+			return hui
+		end
+	end
+
+	-- 2. Studio mode
+	if RunService:IsStudio() then
+		if LocalPlayer then
+			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5)
+			if playerGui then
+				return playerGui
+			end
+		end
+	end
+
+	-- 3. Try CoreGui if identity has permission
+	local successCore, coreGui = pcall(function()
+		return game:GetService("CoreGui")
+	end)
+	if successCore and coreGui then
+		local testSuccess = pcall(function()
+			local test = Instance.new("Folder")
+			test.Parent = coreGui
+			test:Destroy()
+		end)
+		if testSuccess then
+			return coreGui
+		end
+	end
+
+	-- 4. Low UNC / Level 2-3 / Solara / Mobile fallback: PlayerGui
+	if LocalPlayer then
+		local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5)
+		if playerGui then
+			return playerGui
+		end
+	end
+
+	return coreGui or game:GetService("StarterGui")
+end
+
+local function SafeProtectGui(gui)
+	pcall(function()
+		if typeof(protectgui) == "function" then
+			protectgui(gui)
+		elseif typeof(syn) == "table" and typeof(syn.protect_gui) == "function" then
+			syn.protect_gui(gui)
+		end
+	end)
+end
+
 local GUI = New("ScreenGui", {
-	Parent = RunService:IsStudio() and LocalPlayer.PlayerGui or game:GetService("CoreGui"),
+	Name = "Zensai",
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 })
-ProtectGui(GUI)
+SafeProtectGui(GUI)
+GUI.Parent = GetGuiParent()
+
 NotificationModule:Init(GUI)
 
 local Library = {
@@ -156,21 +221,25 @@ function Library:SetTheme(Value)
 end
 
 function Library:Destroy()
-	if Library.Window then
-		Library.Unloaded = true
-		if Library.UseAcrylic then
+	Library.Unloaded = true
+	pcall(function()
+		if Library.UseAcrylic and Library.Window and Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Model then
 			Library.Window.AcrylicPaint.Model:Destroy()
 		end
 		Creator.Disconnect()
-		Library.GUI:Destroy()
-	end
+		if Library.GUI then
+			Library.GUI:Destroy()
+		end
+	end)
 end
 
 function Library:ToggleAcrylic(Value)
 	if Library.Window then
 		if Library.UseAcrylic then
 			Library.Acrylic = Value
-			Library.Window.AcrylicPaint.Model.Transparency = Value and 0.98 or 1
+			if Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Model then
+				Library.Window.AcrylicPaint.Model.Transparency = Value and 0.98 or 1
+			end
 			if Value then
 				Acrylic.Enable()
 			else
@@ -181,7 +250,7 @@ function Library:ToggleAcrylic(Value)
 end
 
 function Library:ToggleTransparency(Value)
-	if Library.Window then
+	if Library.Window and Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Frame then
 		Library.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = Value and 0.35 or 0
 	end
 end
@@ -190,9 +259,12 @@ function Library:Notify(Config)
 	return NotificationModule:New(Config)
 end
 
-if getgenv then
-	getgenv().Zensai = Library
-	getgenv().Fluent = Library
+local globalEnv = (typeof(getgenv) == "function" and getgenv()) or _G or shared
+if typeof(globalEnv) == "table" then
+	pcall(function()
+		globalEnv.Zensai = Library
+		globalEnv.Fluent = Library
+	end)
 end
 
 return Library
@@ -215,16 +287,24 @@ function Acrylic.init()
 
 	function Acrylic.Enable()
 		for _, effect in pairs(depthOfFieldDefaults) do
-			effect.Enabled = false
+			pcall(function()
+				effect.Enabled = false
+			end)
 		end
-		baseEffect.Parent = game:GetService("Lighting")
+		pcall(function()
+			baseEffect.Parent = game:GetService("Lighting")
+		end)
 	end
 
 	function Acrylic.Disable()
 		for _, effect in pairs(depthOfFieldDefaults) do
-			effect.Enabled = effect.enabled
+			pcall(function()
+				effect.Enabled = effect.enabled
+			end)
 		end
-		baseEffect.Parent = nil
+		pcall(function()
+			baseEffect.Parent = nil
+		end)
 	end
 
 	local function registerDefaults()
@@ -253,11 +333,24 @@ return Acrylic
 end,
 [3] = function(...)
 local maui, script, require, getfenv, setfenv = b(3)
+local Workspace = game:GetService("Workspace")
 local Creator = require(script.Parent.Parent.Creator)
 local createAcrylic = require(script.Parent.CreateAcrylic)
-local viewportPointToWorld, getOffset = unpack(require(script.Parent.Utils))
+local unpackFn = unpack or table.unpack
+local viewportPointToWorld, getOffset = unpackFn(require(script.Parent.Utils))
 
-local BlurFolder = Instance.new("Folder", game:GetService("Workspace").CurrentCamera)
+local BlurFolder = Instance.new("Folder")
+BlurFolder.Name = "AcrylicBlur"
+
+local function updateBlurParent()
+	local Camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+	if Camera and BlurFolder.Parent ~= Camera then
+		BlurFolder.Parent = Camera
+	end
+end
+
+updateBlurParent()
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(updateBlurParent)
 
 local function createAcrylicBlur(distance)
 	local cleanups = {}
@@ -318,7 +411,7 @@ local function createAcrylicBlur(distance)
 	end
 
 	local function renderOnChange()
-		local camera = game:GetService("Workspace").CurrentCamera
+		local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
 		if not camera then
 			return
 		end
@@ -328,6 +421,11 @@ local function createAcrylicBlur(distance)
 		table.insert(cleanups, camera:GetPropertyChangedSignal("FieldOfView"):Connect(render))
 		task.spawn(render)
 	end
+
+	table.insert(cleanups, Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		updateBlurParent()
+		renderOnChange()
+	end))
 
 	model.Destroying:Connect(function()
 		for _, item in cleanups do
@@ -532,12 +630,17 @@ local function map(value, inMin, inMax, outMin, outMax)
 end
 
 local function viewportPointToWorld(location, distance)
-	local unitRay = game:GetService("Workspace").CurrentCamera:ScreenPointToRay(location.X, location.Y)
+	local camera = game:GetService("Workspace").CurrentCamera
+	if not camera then
+		return Vector3.zero
+	end
+	local unitRay = camera:ScreenPointToRay(location.X, location.Y)
 	return unitRay.Origin + unitRay.Direction * distance
 end
 
 local function getOffset()
-	local viewportSizeY = game:GetService("Workspace").CurrentCamera.ViewportSize.Y
+	local camera = game:GetService("Workspace").CurrentCamera
+	local viewportSizeY = camera and camera.ViewportSize.Y or 1080
 	return map(viewportSizeY, 0, 2560, 8, 56)
 end
 
@@ -634,8 +737,6 @@ end,
 [10] = function(...)
 local maui, script, require, getfenv, setfenv = b(10)
 local UserInputService = game:GetService("UserInputService")
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-local Camera = game:GetService("Workspace").CurrentCamera
 
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
@@ -1720,8 +1821,6 @@ end,
 local maui, script, require, getfenv, setfenv = b(17)
 -- i will rewrite this someday
 local UserInputService = game:GetService("UserInputService")
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-local Camera = game:GetService("Workspace").CurrentCamera
 
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
@@ -1945,8 +2044,8 @@ return function(Config)
 
 			if Window.Maximized then
 				StartPos = UDim2.fromOffset(
-					Mouse.X - (Mouse.X * ((OldSizeX - 100) / Window.Root.AbsoluteSize.X)),
-					Mouse.Y - (Mouse.Y * (OldSizeY / Window.Root.AbsoluteSize.Y))
+					Input.Position.X - (Input.Position.X * ((OldSizeX - 100) / Window.Root.AbsoluteSize.X)),
+					Input.Position.Y - (Input.Position.Y * (OldSizeY / Window.Root.AbsoluteSize.Y))
 				)
 			end
 		end
@@ -2953,8 +3052,6 @@ end,
 local maui, script, require, getfenv, setfenv = b(22)
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-local Camera = game:GetService("Workspace").CurrentCamera
 
 local Root = script.Parent.Parent
 local Creator = require(Root.Creator)
@@ -6065,4 +6162,192 @@ return {
 end
 }
 
-do local ab,ac,ad,ae,af,ag,ah,aj,c,e,f,g,h,i,j,k=task,setmetatable,error,newproxy,getmetatable,next,table,unpack,coroutine,script,type,require,pcall,getfenv,setfenv,rawget local l,m,n,o,p,s,t,u,v,w,x=ah.insert,ah.remove,ah.freeze or function(l)return l end,ab and ab.defer or function(l,...)local m=c.create(l)c.resume(m,...)return m end,'0.0.0-venv',{},{},{},{},{},{}local y,z={GetChildren=function(y)local z,A=x[y],{}for B in ag,z do l(A,B)end return A end,FindFirstChild=function(y,z)if not z then ad('Argument 1 missing or nil',2)end for A in ag,x[y]do if A.Name==z then return A end end return end,GetFullName=function(y)local z,A=y.Name,y.Parent while A do z=A.Name..'.'..z A=A.Parent end return'VirtualEnv.'..z end},{}for A,B in ag,y do z[A]=function(C,...)if not x[C]then ad("Expected ':' not '.' calling member function "..A,1)end return B(C,...)end end local C=function(C,D,E)local F,G,H,I,J=ac({},{__mode='k'}),function(F)ad(F..' is not a valid (virtual) member of '..C..' "'..D..'"',1)end,function(F)ad('Unable to assign (virtual) property '..F..'. Property is read only',1)end,(ae(true))local K=af(I)K.__index=function(L,M)if M=='ClassName'then return C elseif M=='Name'then return D elseif M=='Parent'then return E elseif C=='StringValue'and M=='Value'then return J else local N=z[M]if N then return N end end for N in ag,F do if N.Name==M then return N end end G(M)end K.__newindex=function(L,M,N)if M=='ClassName'then H(M)elseif M=='Name'then D=N elseif M=='Parent'then if N==I then return end if E~=nil then x[E][I]=nil end E=N if N~=nil then x[N][I]=true end elseif C=='StringValue'and M=='Value'then J=N else G(M)end end K.__tostring=function()return D end x[I]=F if E~=nil then x[E][I]=true end return I end local function D(E,F)local G,H,I,J=E[1],E[2],E[3],E[4]local K=m(I,1)local L=C(H,K,F)s[G]=L if I then for M,N in ag,I do L[M]=N end end if J then for M,N in ag,J do D(N,L)end end return L end local E={}for F,G in ag,a do l(E,D(G))end for H,I in ag,aa do local J=s[H]t[J]=I local K=J.ClassName if K=='LocalScript'or K=='Script'then l(v,J)end end local J=function(J)local K,L=J.ClassName,u[J]if L and K=='ModuleScript'then return aj(L)end local M=t[J]if not M then return end if K=='LocalScript'or K=='Script'then M()return else local N={M()}u[J]=N return aj(N)end end function b(K)local L=s[K]local M=t[L]if not M then return end local N,O,P,Q,R,S,T=false,n{Version=p,Script=e,Shared=w,GetScript=function()return e end,GetShared=function()return w end},L,function(N,...)if x[N]and N.ClassName=='ModuleScript'and t[N]then return J(N)end return g(N,...)end local U,V=function(U,...)if not N then T()end if f(U)=='number'and U>=0 then if U==0 then return S else U=U+1 local V,W=h(i,U)if V and W==R then return S end end end return i(U,...)end,function(U,V,...)if not N then T()end if f(U)=='number'and U>=0 then if U==0 then return j(S,V)else U=U+1 local W,X=h(i,U)if W and X==R then return j(S,V)end end end return j(U,V,...)end function T()R=i(0)local W={maui=O,script=P,require=Q,getfenv=U,setfenv=V}S=ac({},{__index=function(X,Y)local Z=k(S,Y)if Z~=nil then return Z end local _=W[Y]if _~=nil then return _ end return R[Y]end})j(M,S)N=true end return O,P,Q,U,V end for K,L in ag,v do o(J,L)end do local M for N,O in ag,E do if O.ClassName=='ModuleScript'and O.Name=='MainModule'then M=O break end end if M then return J(M)end end end
+do
+	local ab = task
+	local ac = setmetatable
+	local ad = error
+	local ae = (typeof(newproxy) == "function" and newproxy) or function(c) return setmetatable({}, {}) end
+	local af = getmetatable
+	local ag = next
+	local ah = table
+	local aj = unpack or table.unpack
+	local c = coroutine
+	local e = script
+	local f = type
+	local g = require
+	local h = pcall
+	local i = (typeof(getfenv) == "function" and getfenv) or function(...) return _G end
+	local j = (typeof(setfenv) == "function" and setfenv) or function(fn, env) return fn end
+	local k = rawget
+	local l, m, n, o, p, s, t, u, v, w, x =
+		ah.insert,
+		ah.remove,
+		ah.freeze or function(l) return l end,
+		ab and ab.defer or function(l, ...) local m = c.create(l) c.resume(m, ...) return m end,
+		'0.0.0-venv',
+		{}, {}, {}, {}, {}, {}
+
+	local y, z = {
+		GetChildren = function(y)
+			local z, A = x[y], {}
+			for B in ag, z do l(A, B) end
+			return A
+		end,
+		FindFirstChild = function(y, z)
+			if not z then ad('Argument 1 missing or nil', 2) end
+			for A in ag, x[y] do if A.Name == z then return A end end
+			return
+		end,
+		GetFullName = function(y)
+			local z, A = y.Name, y.Parent
+			while A do z = A.Name .. '.' .. z A = A.Parent end
+			return 'VirtualEnv.' .. z
+		end,
+	}, {}
+
+	for A, B in ag, y do
+		z[A] = function(C, ...)
+			if not x[C] then ad("Expected ':' not '.' calling member function " .. A, 1) end
+			return B(C, ...)
+		end
+	end
+
+	local C = function(C, D, E)
+		local F, G, H, I, J =
+			ac({}, { __mode = 'k' }),
+			function(F) ad(F .. ' is not a valid (virtual) member of ' .. C .. ' "' .. D .. '"', 1) end,
+			function(F) ad('Unable to assign (virtual) property ' .. F .. '. Property is read only', 1) end,
+			(ae(true))
+		local K = af(I)
+		K.__index = function(L, M)
+			if M == 'ClassName' then return C
+			elseif M == 'Name' then return D
+			elseif M == 'Parent' then return E
+			elseif C == 'StringValue' and M == 'Value' then return J
+			else
+				local N = z[M]
+				if N then return N end
+			end
+			for N in ag, F do if N.Name == M then return N end end
+			G(M)
+		end
+		K.__newindex = function(L, M, N)
+			if M == 'ClassName' then H(M)
+			elseif M == 'Name' then D = N
+			elseif M == 'Parent' then
+				if N == I then return end
+				if E ~= nil then x[E][I] = nil end
+				E = N
+				if N ~= nil then x[N][I] = true end
+			elseif C == 'StringValue' and M == 'Value' then J = N
+			else G(M) end
+		end
+		K.__tostring = function() return D end
+		x[I] = F
+		if E ~= nil then x[E][I] = true end
+		return I
+	end
+
+	local function D(E, F)
+		local G, H, I, J = E[1], E[2], E[3], E[4]
+		local K = m(I, 1)
+		local L = C(H, K, F)
+		s[G] = L
+		if I then for M, N in ag, I do L[M] = N end end
+		if J then for M, N in ag, J do D(N, L) end end
+		return L
+	end
+
+	local E = {}
+	for F, G in ag, a do l(E, D(G)) end
+	for H, I in ag, aa do
+		local J = s[H]
+		t[J] = I
+		local K = J.ClassName
+		if K == 'LocalScript' or K == 'Script' then l(v, J) end
+	end
+
+	local J = function(J)
+		local K, L = J.ClassName, u[J]
+		if L and K == 'ModuleScript' then return aj(L) end
+		local M = t[J]
+		if not M then return end
+		if K == 'LocalScript' or K == 'Script' then
+			M()
+			return
+		else
+			local N = { M() }
+			u[J] = N
+			return aj(N)
+		end
+	end
+
+	function b(K)
+		local L = s[K]
+		local M = t[L]
+		if not M then return end
+		local N, O, P, Q, R, S, T =
+			false,
+			n{ Version = p, Script = e, Shared = w, GetScript = function() return e end, GetShared = function() return w end },
+			L,
+			function(N, ...)
+				if x[N] and N.ClassName == 'ModuleScript' and t[N] then return J(N) end
+				return g(N, ...)
+			end
+		local U, V =
+			function(U, ...)
+				if not N then T() end
+				if f(U) == 'number' and U >= 0 then
+					if U == 0 then return S
+					else
+						U = U + 1
+						local V, W = h(i, U)
+						if V and W == R then return S end
+					end
+				end
+				return i(U, ...)
+			end,
+			function(U, V, ...)
+				if not N then T() end
+				if f(U) == 'number' and U >= 0 then
+					if U == 0 then return j(S, V)
+					else
+						U = U + 1
+						local W, X = h(i, U)
+						if W and X == R then return j(S, V) end
+					end
+				end
+				return j(U, V, ...)
+			end
+		function T()
+			local ok, env = h(i, 0)
+			R = (ok and env) or _G
+			local W = { maui = O, script = P, require = Q, getfenv = U, setfenv = V }
+			S = ac({}, {
+				__index = function(X, Y)
+					local Z = k(S, Y)
+					if Z ~= nil then return Z end
+					local _ = W[Y]
+					if _ ~= nil then return _ end
+					return R[Y]
+				end,
+			})
+			pcall(j, M, S)
+			N = true
+		end
+		return O, P, Q, U, V
+	end
+
+	for K, L in ag, v do o(J, L) end
+
+	do
+		local M
+		for N, O in ag, E do
+			if O.ClassName == 'ModuleScript' and O.Name == 'MainModule' then
+				M = O
+				break
+			end
+		end
+		if M then return J(M) end
+	end
+end

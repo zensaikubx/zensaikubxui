@@ -14,16 +14,24 @@ function Acrylic.init()
 
 	function Acrylic.Enable()
 		for _, effect in pairs(depthOfFieldDefaults) do
-			effect.Enabled = false
+			pcall(function()
+				effect.Enabled = false
+			end)
 		end
-		baseEffect.Parent = game:GetService("Lighting")
+		pcall(function()
+			baseEffect.Parent = game:GetService("Lighting")
+		end)
 	end
 
 	function Acrylic.Disable()
 		for _, effect in pairs(depthOfFieldDefaults) do
-			effect.Enabled = effect.enabled
+			pcall(function()
+				effect.Enabled = effect.enabled
+			end)
 		end
-		baseEffect.Parent = nil
+		pcall(function()
+			baseEffect.Parent = nil
+		end)
 	end
 
 	local function registerDefaults()

@@ -1,10 +1,17 @@
-local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
-local LocalPlayer = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local Camera = game:GetService("Workspace").CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer and not RunService:IsStudio() then
+	local start = os.clock()
+	while not LocalPlayer and (os.clock() - start) < 5 do
+		LocalPlayer = Players.LocalPlayer
+		task.wait(0.05)
+	end
+end
 
 local Root = script
 local Creator = require(Root.Creator)
@@ -15,11 +22,69 @@ local NotificationModule = require(Components.Notification)
 
 local New = Creator.New
 
-local ProtectGui = protectgui or (syn and syn.protect_gui) or function() end
+local function GetGuiParent()
+	-- 1. UNC gethui function (hidden UI container)
+	if typeof(gethui) == "function" then
+		local success, hui = pcall(gethui)
+		if success and hui then
+			return hui
+		end
+	end
+
+	-- 2. Studio mode
+	if RunService:IsStudio() then
+		if LocalPlayer then
+			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5)
+			if playerGui then
+				return playerGui
+			end
+		end
+	end
+
+	-- 3. Try CoreGui if identity has permission
+	local successCore, coreGui = pcall(function()
+		return game:GetService("CoreGui")
+	end)
+	if successCore and coreGui then
+		local testSuccess = pcall(function()
+			local test = Instance.new("Folder")
+			test.Parent = coreGui
+			test:Destroy()
+		end)
+		if testSuccess then
+			return coreGui
+		end
+	end
+
+	-- 4. Low UNC / Level 2-3 / Solara / Mobile fallback: PlayerGui
+	if LocalPlayer then
+		local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5)
+		if playerGui then
+			return playerGui
+		end
+	end
+
+	return coreGui or game:GetService("StarterGui")
+end
+
+local function SafeProtectGui(gui)
+	pcall(function()
+		if typeof(protectgui) == "function" then
+			protectgui(gui)
+		elseif typeof(syn) == "table" and typeof(syn.protect_gui) == "function" then
+			syn.protect_gui(gui)
+		end
+	end)
+end
+
 local GUI = New("ScreenGui", {
-	Parent = RunService:IsStudio() and LocalPlayer.PlayerGui or game:GetService("CoreGui"),
+	Name = "Zensai",
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 })
-ProtectGui(GUI)
+SafeProtectGui(GUI)
+GUI.Parent = GetGuiParent()
+
 NotificationModule:Init(GUI)
 
 local Library = {
@@ -144,21 +209,25 @@ function Library:SetTheme(Value)
 end
 
 function Library:Destroy()
-	if Library.Window then
-		Library.Unloaded = true
-		if Library.UseAcrylic then
+	Library.Unloaded = true
+	pcall(function()
+		if Library.UseAcrylic and Library.Window and Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Model then
 			Library.Window.AcrylicPaint.Model:Destroy()
 		end
 		Creator.Disconnect()
-		Library.GUI:Destroy()
-	end
+		if Library.GUI then
+			Library.GUI:Destroy()
+		end
+	end)
 end
 
 function Library:ToggleAcrylic(Value)
 	if Library.Window then
 		if Library.UseAcrylic then
 			Library.Acrylic = Value
-			Library.Window.AcrylicPaint.Model.Transparency = Value and 0.98 or 1
+			if Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Model then
+				Library.Window.AcrylicPaint.Model.Transparency = Value and 0.98 or 1
+			end
 			if Value then
 				Acrylic.Enable()
 			else
@@ -169,7 +238,7 @@ function Library:ToggleAcrylic(Value)
 end
 
 function Library:ToggleTransparency(Value)
-	if Library.Window then
+	if Library.Window and Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Frame then
 		Library.Window.AcrylicPaint.Frame.Background.BackgroundTransparency = Value and 0.35 or 0
 	end
 end
@@ -178,9 +247,12 @@ function Library:Notify(Config)
 	return NotificationModule:New(Config)
 end
 
-if getgenv then
-	getgenv().Zensai = Library
-	getgenv().Fluent = Library
+local globalEnv = (typeof(getgenv) == "function" and getgenv()) or _G or shared
+if typeof(globalEnv) == "table" then
+	pcall(function()
+		globalEnv.Zensai = Library
+		globalEnv.Fluent = Library
+	end)
 end
 
 return Library

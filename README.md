@@ -24,6 +24,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 - 📱 **Mobile & Touch Supported**: รองรับการใช้งานบนมือถือ จอสัมผัส ทุก Element รวมถึง Colorpicker
 - 🛡️ **Zero Memory Leaks**: ทำลาย Instance และตัดการเชื่อมต่อสัญญาณอย่างสมบูรณ์เมื่อปิดหน้าต่าง
 - 💾 **Smart Config System**: จัดเก็บการตั้งค่าไว้ในโฟลเดอร์ `ZensaiSettings` พร้อมระบบตรวจจับและดึงคอนฟิกเก่าจาก `FluentSettings` ให้อัตโนมัติ
+- 🌐 **Universal Executor Compatibility (sUNC & Low UNC)**: รองรับทั้ง Executor สเปกสูง (sUNC) และสเปกต่ำ/ฟรี (Low UNC / Solara / Xeno / Celery / Delta / Codex / Hydrogen) โดยไม่แครชเรื่อง `CoreGui`, `protectgui`, หรือ `readfile/writefile`
 
 ---
 

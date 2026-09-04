@@ -1,7 +1,5 @@
 -- i will rewrite this someday
 local UserInputService = game:GetService("UserInputService")
-local Mouse = game:GetService("Players").LocalPlayer:GetMouse()
-local Camera = game:GetService("Workspace").CurrentCamera
 
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
@@ -225,8 +223,8 @@ return function(Config)
 
 			if Window.Maximized then
 				StartPos = UDim2.fromOffset(
-					Mouse.X - (Mouse.X * ((OldSizeX - 100) / Window.Root.AbsoluteSize.X)),
-					Mouse.Y - (Mouse.Y * (OldSizeY / Window.Root.AbsoluteSize.Y))
+					Input.Position.X - (Input.Position.X * ((OldSizeX - 100) / Window.Root.AbsoluteSize.X)),
+					Input.Position.Y - (Input.Position.Y * (OldSizeY / Window.Root.AbsoluteSize.Y))
 				)
 			end
 		end

@@ -1,8 +1,21 @@
+local Workspace = game:GetService("Workspace")
 local Creator = require(script.Parent.Parent.Creator)
 local createAcrylic = require(script.Parent.CreateAcrylic)
-local viewportPointToWorld, getOffset = unpack(require(script.Parent.Utils))
+local unpackFn = unpack or table.unpack
+local viewportPointToWorld, getOffset = unpackFn(require(script.Parent.Utils))
 
-local BlurFolder = Instance.new("Folder", game:GetService("Workspace").CurrentCamera)
+local BlurFolder = Instance.new("Folder")
+BlurFolder.Name = "AcrylicBlur"
+
+local function updateBlurParent()
+	local Camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+	if Camera and BlurFolder.Parent ~= Camera then
+		BlurFolder.Parent = Camera
+	end
+end
+
+updateBlurParent()
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(updateBlurParent)
 
 local function createAcrylicBlur(distance)
 	local cleanups = {}
@@ -63,7 +76,7 @@ local function createAcrylicBlur(distance)
 	end
 
 	local function renderOnChange()
-		local camera = game:GetService("Workspace").CurrentCamera
+		local camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
 		if not camera then
 			return
 		end
@@ -73,6 +86,11 @@ local function createAcrylicBlur(distance)
 		table.insert(cleanups, camera:GetPropertyChangedSignal("FieldOfView"):Connect(render))
 		task.spawn(render)
 	end
+
+	table.insert(cleanups, Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		updateBlurParent()
+		renderOnChange()
+	end))
 
 	model.Destroying:Connect(function()
 		for _, item in cleanups do

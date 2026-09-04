@@ -3,12 +3,14 @@
     Ultra-Smooth & Enhanced Roblox Interface Suite
 --]]
 
-local Zensai = loadstring(readfile("main.lua"))()
--- Or via loadstring URL if hosted:
--- local Zensai = loadstring(game:HttpGet(".../main.lua"))()
+local Zensai = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/InterfaceManager.lua"))()
 
-local SaveManager = loadstring(readfile("SaveManager.lua"))()
-local InterfaceManager = loadstring(readfile("InterfaceManager.lua"))()
+-- For local development / offline:
+-- local Zensai = loadstring(readfile("main.lua"))()
+-- local SaveManager = loadstring(readfile("SaveManager.lua"))()
+-- local InterfaceManager = loadstring(readfile("InterfaceManager.lua"))()
 
 local Window = Zensai:CreateWindow({
     Title = "Zensai UI " .. Zensai.Version,
