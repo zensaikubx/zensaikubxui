@@ -41,6 +41,19 @@ local Zensai = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensai
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/InterfaceManager.lua"))()
 
+-- Wait for Roblox camera to initialize
+local Camera
+
+repeat
+    Camera = workspace.CurrentCamera
+    task.wait()
+until Camera
+
+-- Wait until ViewportSize is valid
+repeat
+    task.wait()
+until Camera.ViewportSize.X > 0 and Camera.ViewportSize.Y > 0
+
 local Window = Zensai:CreateWindow({
     Title = "Zensai UI",
     SubTitle = "by zensaikubx",

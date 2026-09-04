@@ -195,6 +195,18 @@ function Library:CreateWindow(Config)
 		return
 	end
 
+	-- Wait for Roblox camera to initialize
+	local Camera
+	repeat
+		Camera = workspace.CurrentCamera
+		task.wait()
+	until Camera
+
+	-- Wait until ViewportSize is valid
+	repeat
+		task.wait()
+	until Camera.ViewportSize.X > 0 and Camera.ViewportSize.Y > 0
+
 	Library.MinimizeKey = Config.MinimizeKey or Enum.KeyCode.LeftControl
 	Library.UseAcrylic = Config.Acrylic or false
 	Library.Acrylic = Config.Acrylic or false
