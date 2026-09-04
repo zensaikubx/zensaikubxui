@@ -201,6 +201,44 @@ function Element:New(Idx, Config)
 						Keybind:DoClick()
 					end
 				end
+			elseif Keybind.Mode == "Hold" then
+				-- Fire Callback(true) on key-down for Hold mode
+				local Key = Keybind.Value
+				local matched = false
+
+				if Key == "MouseLeft" and Input.UserInputType == Enum.UserInputType.MouseButton1 then
+					matched = true
+				elseif Key == "MouseRight" and Input.UserInputType == Enum.UserInputType.MouseButton2 then
+					matched = true
+				elseif Input.UserInputType == Enum.UserInputType.Keyboard and Input.KeyCode.Name == Key then
+					matched = true
+				end
+
+				if matched then
+					Library:SafeCallback(Keybind.Callback, true)
+					Library:SafeCallback(Keybind.Clicked, true)
+				end
+			end
+		end
+	end)
+
+	Creator.AddSignal(UserInputService.InputEnded, function(Input)
+		if not Picking and Keybind.Mode == "Hold" then
+			-- Fire Callback(false) on key-up for Hold mode
+			local Key = Keybind.Value
+			local matched = false
+
+			if Key == "MouseLeft" and Input.UserInputType == Enum.UserInputType.MouseButton1 then
+				matched = true
+			elseif Key == "MouseRight" and Input.UserInputType == Enum.UserInputType.MouseButton2 then
+				matched = true
+			elseif Input.UserInputType == Enum.UserInputType.Keyboard and Input.KeyCode.Name == Key then
+				matched = true
+			end
+
+			if matched then
+				Library:SafeCallback(Keybind.Callback, false)
+				Library:SafeCallback(Keybind.Clicked, false)
 			end
 		end
 	end)

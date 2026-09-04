@@ -6,42 +6,30 @@
 -- ════════════════════════════════════════════
 --  โหลด Library
 -- ════════════════════════════════════════════
-local function safeLoad(url, fallback)
-    local function get(u)
-        local c
-        pcall(function() c = game:HttpGet(u) end)
-        if c and c ~= "" then return c end
-        local r = (typeof(request) == "function" and request)
-            or (typeof(http_request) == "function" and http_request)
-            or (typeof(syn) == "table" and syn.request)
-        if r then
-            pcall(function()
-                local res = r({ Url = u, Method = "GET" })
-                if typeof(res) == "table" and res.Body ~= "" then c = res.Body end
-            end)
-        end
-        return c
-    end
-    local code = get(url)
-    if (not code or code == "") and fallback then code = get(fallback) end
-    assert(code and code ~= "", "[Zensai] โหลดไม่ได้: " .. tostring(url))
-    local fn, err = loadstring(code)
-    assert(fn, "[Zensai] loadstring error: " .. tostring(err))
-    return fn()
+local function safeLoad(url)
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+    if success then return result end
+    warn("โหลดล้มเหลว: " .. url)
+    return nil
 end
 
-local Zensai = safeLoad(
-    "https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/main.lua",
-    "https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/main.lua"
-)
-local SaveManager = safeLoad(
-    "https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua",
-    "https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/SaveManager.lua"
-)
-local InterfaceManager = safeLoad(
-    "https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/InterfaceManager.lua",
-    "https://cdn.jsdelivr.net/gh/zensaikubx/zensaikubxui@main/InterfaceManager.lua"
-)
+local Zensai = safeLoad("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/main.lua")
+local SaveManager = safeLoad("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua")
+local InterfaceManager = safeLoad("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/InterfaceManager.lua")
+
+-- ตรวจสอบว่าโหลดสำเร็จก่อนใช้งาน
+if not Zensai then
+    warn("[Zensai] โหลด library หลักล้มเหลว — หยุดทำงาน")
+    return
+end
+if not SaveManager then
+    warn("[Zensai] โหลด SaveManager ล้มเหลว — ข้ามการบันทึก config")
+end
+if not InterfaceManager then
+    warn("[Zensai] โหลด InterfaceManager ล้มเหลว — ข้ามการจัดการ interface")
+end
 
 -- ════════════════════════════════════════════
 --  สร้าง Window
@@ -206,22 +194,26 @@ end
 -- ════════════════════════════════════════════
 --  Tab: Settings  (SaveManager + InterfaceManager)
 -- ════════════════════════════════════════════
-SaveManager:SetLibrary(Zensai)
-InterfaceManager:SetLibrary(Zensai)
+if SaveManager and InterfaceManager then
+    SaveManager:SetLibrary(Zensai)
+    InterfaceManager:SetLibrary(Zensai)
 
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({})
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({})
 
-InterfaceManager:SetFolder("ZensaiUI")
-SaveManager:SetFolder("ZensaiUI")
+    InterfaceManager:SetFolder("ZensaiUI")
+    SaveManager:SetFolder("ZensaiUI")
 
-InterfaceManager:BuildInterfaceSection(Tabs.Settings)
-SaveManager:BuildConfigSection(Tabs.Settings)
+    InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+    SaveManager:BuildConfigSection(Tabs.Settings)
+end
 
 -- ════════════════════════════════════════════
 --  เปิด Tab แรก และโหลด Config อัตโนมัติ
 -- ════════════════════════════════════════════
 Window:SelectTab(1)
-SaveManager:LoadAutoloadConfig()
+if SaveManager then
+    SaveManager:LoadAutoloadConfig()
+end
 
 
