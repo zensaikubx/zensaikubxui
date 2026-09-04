@@ -38,8 +38,15 @@ local function GetGuiParent()
 	-- 1. UNC gethui function (hidden UI container)
 	if typeof(gethui) == "function" then
 		local success, hui = pcall(gethui)
-		if success and hui then
-			return hui
+		if success and hui and typeof(hui) == "Instance" then
+			local testSuccess = pcall(function()
+				local test = Instance.new("ScreenGui")
+				test.Parent = hui
+				test:Destroy()
+			end)
+			if testSuccess then
+				return hui
+			end
 		end
 	end
 
@@ -59,7 +66,7 @@ local function GetGuiParent()
 	end)
 	if successCore and coreGui then
 		local testSuccess = pcall(function()
-			local test = Instance.new("Folder")
+			local test = Instance.new("ScreenGui")
 			test.Parent = coreGui
 			test:Destroy()
 		end)
@@ -95,7 +102,16 @@ local GUI = New("ScreenGui", {
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 })
 SafeProtectGui(GUI)
-GUI.Parent = GetGuiParent()
+
+local guiParent = GetGuiParent()
+local setParentSuccess = pcall(function()
+	GUI.Parent = guiParent
+end)
+if not setParentSuccess and LocalPlayer then
+	pcall(function()
+		GUI.Parent = LocalPlayer:FindFirstChildOfClass("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5)
+	end)
+end
 
 NotificationModule:Init(GUI)
 
@@ -5720,9 +5736,9 @@ function Spring:step(state, dt)
 		--    z = sin(a*c)/c
 		-- Take the Maclaurin expansion of z with respect to c:
 		--    z = a - (a^3*c^2)/6 + (a^5*c^4)/120 + O(c^6)
-		--    z ≈ a - (a^3*c^2)/6 + (a^5*c^4)/120
+		--    z ~= a - (a^3*c^2)/6 + (a^5*c^4)/120
 		-- Rewrite in Horner form:
-		--    z ≈ a + ((a*a)*(c*c)*(c*c)/20 - c*c)*(a*a*a)/6
+		--    z ~= a + ((a*a)*(c*c)*(c*c)/20 - c*c)*(a*a*a)/6
 
 		local z
 		if c > EPS then
