@@ -360,7 +360,27 @@ return function(Config)
 		if require(Root).UseAcrylic then
 			Window.AcrylicPaint.Model:Destroy()
 		end
+		if Window.FloatingButton then
+			pcall(function()
+				Window.FloatingButton:Destroy()
+			end)
+		end
 		Window.Root:Destroy()
+	end
+
+	local FloatingButtonModule = require(Components.FloatingButton)
+	function Window:AddFloatingButton(Config)
+		Config = Config or {}
+		Config.Parent = Config.Parent or Window.Root.Parent
+		if not Config.Callback then
+			Config.Callback = function()
+				Window:Minimize()
+			end
+		end
+
+		local FloatBtn = FloatingButtonModule(Config)
+		Window.FloatingButton = FloatBtn
+		return FloatBtn
 	end
 
 	local DialogModule = require(Components.Dialog):Init(Window)

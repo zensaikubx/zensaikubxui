@@ -40,8 +40,9 @@ local Window = Zensai:CreateWindow({
     TabWidth = 160,
     Size     = UDim2.fromOffset(580, 460),
     Acrylic  = true,               -- blur effect
-    Theme    = "Dark",             -- Dark / Light / Darker / Rose / Aqua / Amethyst
-    MinimizeKey = Enum.KeyCode.LeftControl
+    Theme    = "Darker",           -- Dark / Light / Darker / Rose / Aqua / Amethyst
+    MinimizeKey = Enum.KeyCode.LeftControl,
+    FloatingButton = true,         -- ปุ่มลอยเปิด/ปิด UI ลากได้ (เหมาะกับทั้ง PC และ Mobile)
 })
 
 -- ════════════════════════════════════════════

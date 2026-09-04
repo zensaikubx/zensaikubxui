@@ -6,7 +6,8 @@
 
 ## 🚀 Quick Start (ลิ้งก์พร้อมใช้งาน)
 
-### ตัวเลือกที่ : ลิ้งก์ GitHub Raw โดยตรง
+
+### ตัวเลือกที่ 1: ลิ้งก์ GitHub Raw โดยตรง
 ```lua
 local Zensai = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/zensaikubx/zensaikubxui/main/SaveManager.lua"))()
@@ -18,6 +19,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 ## ✨ คุณสมบัติเด่น (Highlights & Optimizations)
 
 - ⚡ **Ultra-Smooth Dragging**: ลากหน้าต่างและปรับขนาดแบบ 1:1 เรียลไทม์ ไม่มีดีเลย์ เมาส์ไม่หลุดแม้สะบัดเมาส์เร็ว
+- 🔘 **Draggable Floating Button**: ปุ่มลอยเปิด/ปิด UI ลากได้อิสระบนหน้าจอ แยกแยะระหว่าง Drag กับ Tap 100% พร้อมระบบกันหลุดขอบจอ เหมาะกับทั้ง PC และ Mobile
 - 🏎️ **$O(1)$ Theme Updates**: สร้าง UI ได้เร็วขึ้น 90%+ ไม่มีอาการกระตุกตอนโหลด (Lag Spikes)
 - 🎯 **Fixed Slider Mouse Lock**: แก้ไขบั๊ก Slider ค้างตามเมาส์ และคลิกเลื่อนบนรางได้ทันที
 - 📱 **Mobile & Touch Supported**: รองรับการใช้งานบนมือถือ จอสัมผัส ทุก Element รวมถึง Colorpicker
@@ -54,7 +56,8 @@ local Window = Zensai:CreateWindow({
     Size = UDim2.fromOffset(580, 460),
     Acrylic = true,
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    MinimizeKey = Enum.KeyCode.LeftControl,
+    FloatingButton = true -- หรือระบุ { Icon = "menu", Size = UDim2.fromOffset(48, 48) }
 })
 
 local Tabs = {
@@ -161,6 +164,45 @@ SaveManager:BuildConfigSection(Tabs.Settings)
 Window:SelectTab(1)
 SaveManager:LoadAutoloadConfig()
 ```
+
+---
+
+## 🔘 Floating Button (ปุ่มเปิด/ปิด UI ลอยบนหน้าจอ)
+
+ปุ่มลอยสำหรับเปิด/ปิด UI ออกแบบมาให้ลากได้อิสระบนหน้าจอ ตอบสนอง 1:1 เรียลไทม์ รองรับทั้งเมาส์ (PC) และการสัมผัส (Mobile Touch)
+
+### วิธีที่ 1: เปิดใช้งานผ่าน `CreateWindow`
+```lua
+local Window = Zensai:CreateWindow({
+    Title = "Zensai UI",
+    SubTitle = "by zensaikubx",
+    -- ...
+    FloatingButton = true -- หรือกำหนด config ตารางได้
+})
+```
+
+### วิธีที่ 2: เรียกผ่าน `Window:AddFloatingButton`
+```lua
+local FloatBtn = Window:AddFloatingButton({
+    Icon = "menu",                           -- ชื่อ Lucide Icon หรือ rbxassetid://...
+    Size = UDim2.fromOffset(48, 48),          -- ขนาดปุ่ม
+    Position = UDim2.new(0, 20, 0.5, -24),    -- ตำแหน่งเริ่มต้น
+    CornerRadius = UDim.new(0, 14),           -- ความมน
+    Visible = true,                           -- แสดงทันทีหรือไม่
+    Callback = function()                     -- ปรับแต่ง Callback ได้ (ค่าเริ่มต้นคือ Window:Minimize())
+        Window:Minimize()
+    end
+})
+
+-- Methods ที่สามารถเรียกใช้งานได้:
+FloatBtn:SetVisible(false)                   -- ซ่อน/แสดง
+FloatBtn:SetPosition(UDim2.fromOffset(50, 50))
+FloatBtn:SetIcon("layers")
+FloatBtn:Destroy()                           -- ทำลายปุ่ม
+```
+
+### วิธีที่ 3: เปิด/ปิดผ่านแท็บ Interface Settings
+ใน `InterfaceManager` จะมีสวิตช์ Toggle **"Floating Button"** เพิ่มขึ้นมาให้อัตโนมัติ ผู้ใช้งานสามารถเปิด/ปิดได้จากในเกม และระบบจะบันทึกสถานะลงในไฟล์ Config ให้เอง
 
 ---
 

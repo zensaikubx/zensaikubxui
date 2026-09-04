@@ -41,10 +41,11 @@ local InterfaceManager = {} do
 
 	InterfaceManager.Folder = "ZensaiSettings"
     InterfaceManager.Settings = {
-        Theme = "Dark",
+        Theme = "Darker",
         Acrylic = true,
         Transparency = true,
-        MenuKeybind = "LeftControl"
+        MenuKeybind = "LeftControl",
+        FloatingButton = false,
     }
 
     function InterfaceManager:SetFolder(folder)
@@ -151,6 +152,27 @@ local InterfaceManager = {} do
             InterfaceManager:SaveSettings()
 		end)
 		Library.MinimizeKeybind = MenuKeybind
+
+		section:AddToggle("FloatingButtonToggle", {
+			Title = "Floating Button",
+			Description = "Displays a draggable button to toggle UI.",
+			Default = Settings.FloatingButton,
+			Callback = function(Value)
+				Settings.FloatingButton = Value
+				InterfaceManager:SaveSettings()
+				if Library.Window then
+					if Value then
+						if not Library.Window.FloatingButton then
+							Library.Window:AddFloatingButton()
+						else
+							Library.Window.FloatingButton:SetVisible(true)
+						end
+					elseif Library.Window.FloatingButton then
+						Library.Window.FloatingButton:SetVisible(false)
+					end
+				end
+			end
+		})
     end
 end
 

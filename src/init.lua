@@ -226,7 +226,19 @@ function Library:CreateWindow(Config)
 	Library.Window = Window
 	Library:SetTheme(Config.Theme)
 
+	if Config.FloatingButton then
+		local fbConfig = type(Config.FloatingButton) == "table" and Config.FloatingButton or {}
+		Window:AddFloatingButton(fbConfig)
+	end
+
 	return Window
+end
+
+function Library:CreateFloatingButton(Config)
+	Config = Config or {}
+	Config.Parent = Config.Parent or GUI
+	local FloatingButtonModule = require(Components.FloatingButton)
+	return FloatingButtonModule(Config)
 end
 
 function Library:SetTheme(Value)
@@ -239,6 +251,11 @@ end
 function Library:Destroy()
 	Library.Unloaded = true
 	pcall(function()
+		if Library.Window and Library.Window.FloatingButton then
+			pcall(function()
+				Library.Window.FloatingButton:Destroy()
+			end)
+		end
 		if Library.UseAcrylic and Library.Window and Library.Window.AcrylicPaint and Library.Window.AcrylicPaint.Model then
 			Library.Window.AcrylicPaint.Model:Destroy()
 		end
