@@ -1864,6 +1864,14 @@ local New = Creator.New
 return function(Config)
 	local Library = require(Root)
 
+	-- Safe camera fetch with fallback
+	local Camera = workspace.CurrentCamera
+	if not Camera then
+		Camera = workspace:WaitForChild("CurrentCamera", 10)
+	end
+	local vpX = (Camera and Camera.ViewportSize.X > 0 and Camera.ViewportSize.X) or 1280
+	local vpY = (Camera and Camera.ViewportSize.Y > 0 and Camera.ViewportSize.Y) or 720
+
 	local Window = {
 		Minimized = false,
 		Maximized = false,
@@ -1871,8 +1879,8 @@ return function(Config)
 		CurrentPos = 0,
 		TabWidth = 0,
 		Position = UDim2.fromOffset(
-			Camera.ViewportSize.X / 2 - Config.Size.X.Offset / 2,
-			Camera.ViewportSize.Y / 2 - Config.Size.Y.Offset / 2
+			vpX / 2 - Config.Size.X.Offset / 2,
+			vpY / 2 - Config.Size.Y.Offset / 2
 		),
 	}
 
