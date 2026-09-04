@@ -1,5 +1,6 @@
 -- i will rewrite this someday
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
@@ -11,6 +12,12 @@ local Components = script.Parent
 local Spring = Flipper.Spring.new
 local Instant = Flipper.Instant.new
 local New = Creator.New
+
+-- Safe local Camera reference (avoids undeclared global Camera)
+local Camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	Camera = Workspace.CurrentCamera or Camera
+end)
 
 return function(Config)
 	local Library = require(Root)
@@ -222,8 +229,12 @@ return function(Config)
 			StartPos = Window.Root.Position
 
 			if Window.Maximized then
+				-- Both axes use the same relative-ratio formula so the cursor
+				-- stays at the same proportional position after restore,
+				-- matching standard OS drag-to-restore behaviour.
+				-- (The original X formula had an erroneous -100 offset.)
 				StartPos = UDim2.fromOffset(
-					Input.Position.X - (Input.Position.X * ((OldSizeX - 100) / Window.Root.AbsoluteSize.X)),
+					Input.Position.X - (Input.Position.X * (OldSizeX / Window.Root.AbsoluteSize.X)),
 					Input.Position.Y - (Input.Position.Y * (OldSizeY / Window.Root.AbsoluteSize.Y))
 				)
 			end

@@ -1,5 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Root = script.Parent.Parent
 local Creator = require(Root.Creator)
@@ -7,6 +8,12 @@ local Flipper = require(Root.Packages.Flipper)
 
 local New = Creator.New
 local Components = Root.Components
+
+-- Safe local Camera reference (avoids undeclared global Camera)
+local Camera = Workspace.CurrentCamera or Workspace:FindFirstChildOfClass("Camera")
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	Camera = Workspace.CurrentCamera or Camera
+end)
 
 local Element = {}
 Element.__index = Element
@@ -192,10 +199,10 @@ function Element:New(Idx, Config)
 		then
 			local AbsPos, AbsSize = DropdownHolderFrame.AbsolutePosition, DropdownHolderFrame.AbsoluteSize
 			if
-				Mouse.X < AbsPos.X
-				or Mouse.X > AbsPos.X + AbsSize.X
-				or Mouse.Y < (AbsPos.Y - 20 - 1)
-				or Mouse.Y > AbsPos.Y + AbsSize.Y
+				Input.Position.X < AbsPos.X
+				or Input.Position.X > AbsPos.X + AbsSize.X
+				or Input.Position.Y < (AbsPos.Y - 20 - 1)
+				or Input.Position.Y > AbsPos.Y + AbsSize.Y
 			then
 				Dropdown:Close()
 			end
