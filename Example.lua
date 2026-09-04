@@ -81,14 +81,14 @@ Zensai:Notify({
 --  Tab: Main
 -- ════════════════════════════════════════════
 do
-    Tabs.Main:AddSection({ Title = "Info" })
+    Tabs.Main:AddSection("Info")
 
     Tabs.Main:AddParagraph({
         Title   = "ยินดีต้อนรับ",
         Content = "Zensai UI พร้อมใช้งานแล้ว\nรองรับ 60 / 144 / 240 FPS",
     })
 
-    Tabs.Main:AddSection({ Title = "Controls" })
+    Tabs.Main:AddSection("Controls")
 
     -- Button + Dialog
     Tabs.Main:AddButton({
@@ -174,7 +174,7 @@ end
 --  Tab: Visual
 -- ════════════════════════════════════════════
 do
-    Tabs.Visual:AddSection({ Title = "ESP" })
+    Tabs.Visual:AddSection("ESP")
 
     Tabs.Visual:AddToggle("ESPEnabled", {
         Title   = "ESP",
@@ -188,7 +188,7 @@ do
         Callback     = function(c) print("ESP Color:", c) end,
     })
 
-    Tabs.Visual:AddSection({ Title = "Chams" })
+    Tabs.Visual:AddSection("Chams")
 
     Tabs.Visual:AddToggle("ChamsEnabled", {
         Title   = "Chams",
